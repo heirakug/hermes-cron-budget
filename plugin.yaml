@@ -1,0 +1,16 @@
+name: cron-budget
+version: 0.1.0
+author: "heirakug"
+requires_hermes: ">=0.22.1"
+description: >-
+  Counts provider requests, not dollars, across every profile on the machine and stops cron jobs before
+  they spend the requests people need for chat. Free tiers cost $0 and still run out. Cron stops at
+  daily_limit minus chat_reserve, chat is never blocked, and a held job reports once and then runs
+  silently with no model call until the window resets. Observe mode is the default.
+  Disclosure: one llm_execution middleware and one pre_auxiliary_call hook; stores request counts, job
+  names, provider and model names under plugin-data/cron-budget in the root Hermes home, never message
+  text; no network, no credentials, and it does not write the cron store.
+provides_hooks:
+  - pre_auxiliary_call
+provides_middleware:
+  - llm_execution
