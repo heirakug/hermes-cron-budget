@@ -3,8 +3,8 @@ be the reason an agent stops working."""
 from __future__ import annotations
 
 import logging
+import time
 import uuid
-from datetime import datetime
 from types import SimpleNamespace
 from typing import Any, Callable, Optional
 
@@ -89,7 +89,7 @@ class Gate:
     def _note_failure(self) -> None:
         """Failing open must stay visible: `status` warns when calls went through uncounted."""
         try:
-            (self.ledger.directory / "last_failure").write_text(datetime.now().isoformat(timespec="seconds"))
+            (self.ledger.directory / "last_failure").write_text(f"{time.time():.3f}")
         except Exception:
             logger.debug("cron-budget: could not record the failure", exc_info=True)
 

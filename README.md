@@ -41,8 +41,8 @@ model counts unless you narrow it.
 - Subagents that a cron job starts with `delegate_task` are counted as chat and are not held.
   Hermes does not show the cron run to delegated children. Their requests still count toward
   the total, so the job that started them is held sooner.
-- If accounting itself fails, the call goes through and `status` shows a warning. A budget
-  plugin must never be the reason an agent stops working.
+- If accounting itself fails, the call goes through and `status` shows a warning until the
+  window resets. A budget plugin must never be the reason an agent stops working.
 
 ## Install
 
