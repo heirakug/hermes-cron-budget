@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from cron_budget.core import DEFAULTS, Ledger, load_config, model_counts, save_config, window_bounds  # noqa: E402
+from cron_budget.cli import render_status  # noqa: E402
 from cron_budget.gate import Gate  # noqa: E402
 
 JST = ZoneInfo("Asia/Tokyo")
@@ -137,6 +138,18 @@ class GateTests(Base):
     def test_internal_failure_allows_the_call(self):
         (self.dir / "budget.json").write_text('{"reset": "nonsense", "mode": "enforce", "daily_limit": 1, "chat_reserve": 1}')
         self.assertEqual(self.call(self.gate()), "real")
+        self.config()
+        self.assertIn("could not be counted", render_status(self.dir))
+
+    def test_failure_warning_clears_in_next_window(self):
+        self.config()
+        start, _ = window_bounds(load_config(self.dir))
+        (self.dir / "last_failure").write_text(f"{start.timestamp() - 60:.3f}")
+        self.assertNotIn("could not be counted", render_status(self.dir))
+        (self.dir / "last_failure").write_text((start - timedelta(minutes=1)).astimezone().replace(tzinfo=None).isoformat())
+        self.assertNotIn("could not be counted", render_status(self.dir))
+        (self.dir / "last_failure").write_text(f"{start.timestamp() + 60:.3f}")
+        self.assertIn("could not be counted", render_status(self.dir))
 
 
 if __name__ == "__main__":

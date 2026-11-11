@@ -2,15 +2,34 @@
 from __future__ import annotations
 
 import argparse
-from typing import Any
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Optional
 
 from .core import DEFAULTS, Ledger, load_config, save_config, window_bounds
 
 HELP = "Keep scheduled jobs from spending the request quota people need for chat"
 
 
-def render_status() -> str:
-    ledger = Ledger()
+def last_failure(directory: Path, since: datetime) -> Optional[datetime]:
+    """When accounting last failed, if that was inside the current window. Older failures are not
+    shown: the warning is about this window's numbers, so it clears when the window resets."""
+    try:
+        raw = (directory / "last_failure").read_text().strip()
+    except OSError:
+        return None
+    try:
+        when = datetime.fromtimestamp(float(raw), since.tzinfo)
+    except ValueError:
+        try:  # written by 0.1.0 as a naive local ISO time
+            when = datetime.fromisoformat(raw).astimezone(since.tzinfo)
+        except ValueError:
+            return None
+    return when if when >= since else None
+
+
+def render_status(directory: Optional[Path] = None) -> str:
+    ledger = Ledger(directory)
     config = load_config(ledger.directory)
     data = ledger.summary(config)
     cap = max(0, int(config["daily_limit"]) - int(config["chat_reserve"]))
@@ -29,9 +48,10 @@ def render_status() -> str:
                   for profile, name, sent, blocked, would in data["jobs"]]
     else:
         lines.append("jobs: none in this window")
-    failure = ledger.directory / "last_failure"
-    if failure.exists():
-        lines.append(f"warning: at {failure.read_text()} a call could not be counted and was allowed through")
+    failure = last_failure(ledger.directory, data["start"])
+    if failure:
+        lines.append(f"warning: at {failure:%m-%d %H:%M} a call could not be counted and was allowed "
+                     "through, so this window's numbers may be low")
     return "\n".join(lines)
 
 
