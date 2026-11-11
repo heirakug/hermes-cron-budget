@@ -8,6 +8,25 @@ machine stops working until the quota window resets. cron-budget counts **provid
 not dollars**, across every profile on the machine, and holds cron jobs once they reach the
 part of the quota kept for chat.
 
+## Not only free tiers
+
+Free models are where this hurts first, but the same problem shows up whenever Hermes runs
+unattended. Paid APIs also have requests-per-day limits, and some plans include a fixed number of
+requests. In every case the fix is the same: count requests across profiles, let cron use what
+is left above a reserve, and keep the reserve for people. `models` defaults to `"*"`, so every
+model counts unless you narrow it.
+
+- **Paid API with a daily request limit:** set `daily_limit` to your tier's limit and `reset`
+  to the time it resets.
+- **Several providers:** the ledger is a single pool. Use `models` to count only the provider
+  whose quota you are protecting, for example `"*:free"` or `"gpt-*"`.
+- **Dollar or token caps:** cron-budget counts requests, not tokens or spend, so a long agentic
+  job counts the same per call as a short one. If your limit is in dollars or tokens, use a cost
+  plugin with it. cron-budget still keeps cron from crowding out chat.
+- **API modes:** only `chat_completions` calls are held. Providers that Hermes reaches through
+  another API mode (for example Anthropic Messages or Codex Responses) are counted, and over
+  the cap they are recorded as would-block, but they are not held yet.
+
 ## How it works
 
 - Every model call goes through one `llm_execution` middleware. Calls are recorded in a
