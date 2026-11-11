@@ -4,9 +4,11 @@
 DEMO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%x}}")" && pwd)"
 export HERMES_HOME="$DEMO_DIR/.run/home"
 export HERMES_ACCEPT_HOOKS=1
-export OPENAI_API_KEY=fake
-# Make sure no real provider key leaks into the practice environment.
-for var in $(env | sed -n 's/^\([A-Z0-9_]*_API_KEY\)=.*/\1/p'); do
-  [ "$var" = OPENAI_API_KEY ] || unset "$var"
-done
+# Run hermes with only the variables it needs, so no real provider key reaches the practice
+# environment (nothing else from your shell is passed through).
+hermes() {
+  env -i HOME="$HOME" PATH="$PATH" TERM="${TERM:-dumb}" LANG="${LANG:-en_US.UTF-8}" \
+    LC_ALL="${LC_ALL:-}" HERMES_HOME="$HERMES_HOME" HERMES_ACCEPT_HOOKS=1 OPENAI_API_KEY=fake \
+    command hermes "$@"
+}
 case "$-" in *i*) [ -z "${DEMO_PROMPT_SET:-}" ] && PS1="(demo) ${PS1:-}" && DEMO_PROMPT_SET=1 ;; esac
